@@ -1,4 +1,7 @@
 import pyperclip, requests, bs4, json
+import re
+
+
 def getParticipants(results):
     participants = []
     output = "id|StartTime|Name|Comment|slot\n"
@@ -54,8 +57,13 @@ def getScheduleString(schedule):
             line = "\t".join([slot['range'], slot['item'], p['firstname'], p['lastname'], p['comment']])
         output += line + "\n"
     return output
+# link = input("What is the link to your signup genius page?")
+# x = re.search('"urlid":"[.+"]')
+# print(x)
+url = input("what is the url for your signup Genius?")
+x = re.findall("/go/(.+)#", url)
 
-postobj = '{"forSignUpView":true,"urlid":"9040A48ABAC2DA0FC1-48945049-mclain","portalid":0}'
+postobj = '{"forSignUpView":true,"urlid":"' + x[0] + '","portalid":0}'
 res = requests.post("https://www.signupgenius.com/SUGboxAPI.cfm?go=s.getSignupInfo", postobj)
 # print(res.text)
 
