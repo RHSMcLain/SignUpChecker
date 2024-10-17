@@ -1,6 +1,6 @@
 import pyperclip, requests, bs4, json
 import re
-import openpyxl
+from openpyxl import Workbook
 
 
 def getParticipants(results):
@@ -62,7 +62,7 @@ def getScheduleString(schedule):
 # x = re.search('"urlid":"[.+"]')
 # print(x)
 def pushToSpreadsheet(schedule, workbookName):
-    wb = openpyxl.Workbook()
+    wb = Workbook()
     sheet = wb.active
     output = "range\ttime\tfirstName\tlastName\tcomment\n"
     sheet['A1'] = "Range"
@@ -86,10 +86,11 @@ def pushToSpreadsheet(schedule, workbookName):
             sheet['E' + str(counter)] = p['comment']
         counter += 1
     wb.save(workbookName + ".xlsx") 
-def getSignups(url, teacherName):
+def getSignups(url, teacherName, createSheets=True):
     print(url)
-    x = re.findall("/go/(.+)#?", url)
-    
+    print("------")
+    x = re.findall("/go/(.+)#?", url.strip())
+    print(x)
     postobj = '{"forSignUpView":true,"urlid":"' + x[0] + '","portalid":0}'
     res = requests.post("https://www.signupgenius.com/SUGboxAPI.cfm?go=s.getSignupInfo", postobj)
     # print(res.text)
@@ -97,20 +98,36 @@ def getSignups(url, teacherName):
     results = json.loads(res.text)
     participants = getParticipants(results)
     schedule = getSlots(results, participants)
-    pushToSpreadsheet(schedule, teacherName)
+    if createSheets:
+        pushToSpreadsheet(schedule, teacherName)
+    else:
+        pyperclip.copy(getScheduleString(schedule))
+        print("Your results are ready to paste into your favorite spreadsheet")
 
 def pullMultiplesFromClipboard():
     urls = pyperclip.paste()
     print(urls)
+    print("test")
     lines = urls.split("\n")
     for line in lines:
+        print(line)
         item = line.split("\t")
-        if (len(item) == 2):
-            getSignups(item[1], item[0])           
+        print(item[0])
+        print(item[1])
+        if (len(item) == 2 and len(item[0])>5):
+            getSignups(item[1], item[0].strip())           
 
 
+print("Welcome to the Sign Up Checker")
+print("This program will pull sign ups from Sign Up Genius and put them in a spreadsheet")
+print("--------------------------------------------------------------------------")
+print("I can do multiples. Copy from a spreadsheet with columns (Teacher Name) and (SignUp Link)")
+url = input("what is the url for your signup Genius? or (C) if it's multiples in the clipborad ")
 
-pullMultiplesFromClipboard()
+if (url == "C"):
+    pullMultiplesFromClipboard()
+else:
+    getSignups(url, "", False)
 exit(0)
 url = input("what is the url for your signup Genius?")
 x = re.findall("/go/(.+)", url)
