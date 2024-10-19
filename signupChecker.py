@@ -1,5 +1,6 @@
 import pyperclip, requests, bs4, json
 import re
+from openpyxl import Workbook
 
 
 def getParticipants(results):
@@ -60,19 +61,89 @@ def getScheduleString(schedule):
 # link = input("What is the link to your signup genius page?")
 # x = re.search('"urlid":"[.+"]')
 # print(x)
-url = input("what is the url for your signup Genius?")
-x = re.findall("/go/(.+)#", url)
+def pushToSpreadsheet(schedule, workbookName, url=""):
+    wb = Workbook()
+    sheet = wb.active
 
-postobj = '{"forSignUpView":true,"urlid":"' + x[0] + '","portalid":0}'
-res = requests.post("https://www.signupgenius.com/SUGboxAPI.cfm?go=s.getSignupInfo", postobj)
-# print(res.text)
+    output = "range\ttime\tfirstName\tlastName\tcomment\n"
+    sheet['A1'] = "Signup Genius UrL: " 
+    sheet['B1'] = url
+    sheet['A2'] = "Range"
+    sheet["B2"] = "Time"
+    sheet["C2"] = "First Name"
+    sheet["D2"] = "Last Name"
+    sheet["E2"] = "Comment"
+    counter = 3
+    for slot in schedule:
+        p = slot['participant']
+        sheet["A" + str(counter)] = slot['range']
+        sheet["B" + str(counter)] = slot['item']
+        if (p == None):
+            sheet['C' + str(counter)] = "--"
+            sheet['D' + str(counter)] = "--"
+            sheet['E' + str(counter)] = "--"
+            
+        else:
+            sheet['C' + str(counter)] = p['firstname']
+            sheet['D' + str(counter)] = p['lastname']
+            sheet['E' + str(counter)] = p['comment']
+        counter += 1
+    wb.save(workbookName + ".xlsx") 
+def getSignups(url, teacherName, createSheets=True):
+    print(url)
+    print("------")
+    x = re.findall("/go/(.+)#?", url.strip())
+    print(x)
+    postobj = '{"forSignUpView":true,"urlid":"' + x[0] + '","portalid":0}'
+    res = requests.post("https://www.signupgenius.com/SUGboxAPI.cfm?go=s.getSignupInfo", postobj)
+    # print(res.text)
 
-results = json.loads(res.text)
-participants = getParticipants(results)
-schedule = getSlots(results, participants)
-output = getScheduleString(schedule)
-pyperclip.copy(output)
-print("Results are ready to paste into your favorite spreadsheet")
+    results = json.loads(res.text)
+    participants = getParticipants(results)
+    schedule = getSlots(results, participants)
+    if createSheets:
+        pushToSpreadsheet(schedule, teacherName, url)
+    else:
+        pyperclip.copy(getScheduleString(schedule))
+        print("Your results are ready to paste into your favorite spreadsheet")
+
+def pullMultiplesFromClipboard():
+    urls = pyperclip.paste()
+    print(urls)
+    print("test")
+    lines = urls.split("\n")
+    for line in lines:
+        item = line.split("\t")
+        if (len(item) == 2 and len(item[1])>5):
+            getSignups(item[1], item[0].strip())           
+
+
+print("Welcome to the Sign Up Checker")
+print("This program will pull sign ups from Sign Up Genius and put them in a spreadsheet")
+print("--------------------------------------------------------------------------")
+print("I can do multiples. Copy from a spreadsheet with columns (Teacher Name) and (SignUp Link)")
+url = input("what is the url for your signup Genius? or (C) if it's multiples in the clipborad ")
+
+if (url == "C"):
+    pullMultiplesFromClipboard()
+else:
+    getSignups(url, "", False)
+exit(0)
+# url = input("what is the url for your signup Genius?")
+# x = re.findall("/go/(.+)", url)
+# print(x)
+# postobj = '{"forSignUpView":true,"urlid":"' + x[0] + '","portalid":0}'
+# res = requests.post("https://www.signupgenius.com/SUGboxAPI.cfm?go=s.getSignupInfo", postobj)
+# # print(res.text)
+
+# results = json.loads(res.text)
+# participants = getParticipants(results)
+# schedule = getSlots(results, participants)
+# output = getScheduleString(schedule)
+# pyperclip.copy(output)
+# print("Results are ready to paste into your favorite spreadsheet")
+# pushToSpreadsheet(schedule, "McLain")
+
 
 # res.raise_for_status()
 
