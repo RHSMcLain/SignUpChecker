@@ -94,6 +94,7 @@ def getSignups(url, teacherName, createSheets=True):
     print("------")
     x = re.findall("/go/(.+)#?", url.strip())
     print(x)
+
     postobj = '{"forSignUpView":true,"urlid":"' + x[0] + '","portalid":0}'
     res = requests.post("https://www.signupgenius.com/SUGboxAPI.cfm?go=s.getSignupInfo", postobj)
     # print(res.text)
@@ -124,7 +125,7 @@ print("-------------------------------------------------------------------------
 print("I can do multiples. Copy from a spreadsheet with columns (Teacher Name) and (SignUp Link)")
 url = input("what is the url for your signup Genius? or (C) if it's multiples in the clipborad ")
 
-if (url == "C"):
+if (url == "C" or url == "c"):
     pullMultiplesFromClipboard()
 else:
     getSignups(url, "", False)
